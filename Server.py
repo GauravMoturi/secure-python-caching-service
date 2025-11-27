@@ -1,42 +1,81 @@
 # server.py
-# The main server logic for the secure caching service.
+# The main server logic for the High-Performance & Secure Caching Service.
 
 import socket
+import threading
+
+# In-memory key-value store
+cache = {}
+# Lock for thread-safe access to the cache
+cache_lock = threading.Lock()
 
 HOST = '127.0.0.1'
-PORT = 65432
+PORT = 6379
+
+def handle_client(conn, addr):
+    """Handles a single client connection."""
+    print(f"[NEW CONNECTION] {addr} connected.")
+    
+    try:
+        # TODO: Phase 3 - Implement secure handshake with client.
+        
+        while True:
+            data = conn.recv(1024).decode('utf-8').strip()
+            if not data:
+                break
+            
+            # TODO: Phase 3 - Decrypt incoming data after handshake.
+            
+            parts = data.split()
+            command = parts[0].upper()
+            response = ""
+
+            # Phase 2: Use cache_lock to make write operations thread-safe
+            if command in ["SET", "DELETE"]:
+                with cache_lock:
+                    if command == "SET" and len(parts) >= 3:
+                        key = parts[1]
+                        value = " ".join(parts[2:])
+                        cache[key] = value
+                        response = "OK"
+                    elif command == "DELETE" and len(parts) == 2:
+                        key = parts[1]
+                        if key in cache:
+                            del cache[key]
+                            response = "1"
+                        else:
+                            response = "0"
+            # Read operations don't strictly need a lock in this simple case but would in a more complex system.
+            elif command == "GET" and len(parts) == 2:
+                key = parts[1]
+                response = cache.get(key, "(nil)")
+            elif command == "PING":
+                response = "PONG"
+            else:
+                response = "ERROR: Unknown command or incorrect arguments."
+
+            # TODO: Phase 3 - Encrypt outgoing response.
+            conn.sendall(f"{response}\n".encode('utf-8'))
+
+    finally:
+        print(f"[DISCONNECTED] {addr} disconnected.")
+        conn.close()
 
 def main():
-    """
-    Initializes and runs the cache server.
-    """
-    print("Initializing Secure Cache Server...")
+    """Initializes and runs the cache server."""
+    print("[STARTING] Server is starting...")
     
-    # In-memory cache (dictionary) to store key-value pairs
-    cache = {}
-
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((HOST, PORT))
-        s.listen()
-        print(f"Server listening on {HOST}:{PORT}")
-
-        # TODO: Phase 1 - Accept client connection and handle basic commands.
-        conn, addr = s.accept()
-        with conn:
-            print('Connected by', addr)
-            
-            # TODO: Phase 2 - Implement the secure handshake and encryption/decryption layer.
-            
-            # TODO: Phase 3 - Re-architect to handle multiple clients concurrently using threading.
-            
-            # This is a placeholder loop to show a connection is established.
-            while True:
-                data = conn.recv(1024)
-                if not data:
-                    print(f"Connection with {addr} closed.")
-                    break
-                # For now, just echo back the data to the client.
-                conn.sendall(data)
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((HOST, PORT))
+    server_socket.listen()
+    print(f"[LISTENING] Server is listening on {HOST}:{PORT}")
+    
+    while True:
+        conn, addr = server_socket.accept()
+        # Phase 2: Create a new thread for each client
+        thread = threading.Thread(target=handle_client, args=(conn, addr))
+        thread.start()
+        print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
 
 if __name__ == "__main__":
     main()
