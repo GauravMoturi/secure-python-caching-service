@@ -13,17 +13,23 @@ def main():
     print("Initializing client...")
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((HOST, PORT))
-        
-        # TODO: Phase 2 - Implement the client-side secure handshake and encryption.
-        
-        # TODO: Implement client logic to send SET, GET, DELETE commands.
-        
-        print("Sending sample message...")
-        s.sendall(b'Hello, world')
-        data = s.recv(1024)
+        try:
+            s.connect((HOST, PORT))
+            
+            # TODO: Phase 2 - Implement the client-side secure handshake and encryption.
+            
+            # TODO: Implement client logic to send SET, GET, DELETE commands.
+            
+            message_to_send = b'Hello, secure world!'
+            print(f"Sending sample message: {message_to_send.decode()}")
+            s.sendall(message_to_send)
+            
+            data = s.recv(1024)
+            print(f"Received echo from server: {data.decode()}")
 
-    print('Received', repr(data))
+        except ConnectionRefusedError:
+            print(f"Connection failed. Is the server running on {HOST}:{PORT}?")
+
 
 if __name__ == "__main__":
     main()
