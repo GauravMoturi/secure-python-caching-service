@@ -12,7 +12,7 @@ def main():
     """
     print("Initializing Secure Cache Server...")
     
-    # In-memory cache
+    # In-memory cache (dictionary) to store key-value pairs
     cache = {}
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -29,11 +29,13 @@ def main():
             
             # TODO: Phase 3 - Re-architect to handle multiple clients concurrently using threading.
             
+            # This is a placeholder loop to show a connection is established.
             while True:
                 data = conn.recv(1024)
                 if not data:
+                    print(f"Connection with {addr} closed.")
                     break
-                # For now, just echo back
+                # For now, just echo back the data to the client.
                 conn.sendall(data)
 
 if __name__ == "__main__":
